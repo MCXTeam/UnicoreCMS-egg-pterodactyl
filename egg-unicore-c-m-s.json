@@ -1,0 +1,133 @@
+{
+    "_comment": "DO NOT EDIT: FILE GENERATED AUTOMATICALLY BY PTERODACTYL PANEL - PTERODACTYL.IO",
+    "meta": {
+        "version": "PTDL_v2",
+        "update_url": null
+    },
+    "exported_at": "2026-08-06T17:18:16+03:00",
+    "name": "UnicoreCMS",
+    "author": "parker@parkervcp.com",
+    "description": "UnicoreCMS installation egg.\r\n\r\nAutomatically installs UnicoreCMS from the official GitHub repository or from a direct ZIP archive URL. The installer downloads the source, extracts it (if needed), installs all required dependencies, and prepares the CMS for use.",
+    "features": [],
+    "docker_images": {
+        "Nodejs 24": "artemka3112\/unicorecms-core:nodejs_24",
+        "Nodejs 22": "artemka3112\/unicorecms-core:nodejs_22"
+    },
+    "file_denylist": [],
+    "startup": "if [[ -d .git ]] && [[ \"{{AUTO_UPDATE}}\" == \"1\" ]]; then git pull; fi; if [[ \"${AUTO_REBUILD}\" == \"1\" ]]; then \/usr\/local\/bin\/pnpm run build; fi; if [[ \"${DATABASE_SYNC}\" == \"1\" ]]; then \/usr\/local\/bin\/pnpm run sync; fi; if [[ \"${DATABASE_SEED}\" == \"1\" ]]; then \/usr\/local\/bin\/pnpm run seed; fi; \/usr\/local\/bin\/pnpm run start",
+    "config": {
+        "files": "{}",
+        "startup": "{\r\n    \"done\": [\r\n        \"Nest application successfully started\"\r\n    ]\r\n}",
+        "logs": "{}",
+        "stop": "^C"
+    },
+    "scripts": {
+        "installation": {
+            "script": "#!\/bin\/bash\r\n# NodeJS App Installation Script\r\n#\r\n# Server Files: \/mnt\/server\r\napt update\r\napt install -y git curl jq file unzip wget #libtool \\\r\n    # tini \\\r\n    # libcairo2 \\\r\n    # libpango-1.0-0 \\\r\n    # libpangocairo-1.0-0 \\\r\n    # libjpeg62-turbo \\\r\n    # libgif7 \\\r\n    # librsvg2-2\r\n\r\necho -e \"Enabling Corepack...\"\r\ncorepack enable\r\ncorepack prepare pnpm@9.15.9 --activate\r\n\r\nmkdir -p \/mnt\/server\r\ncd \/mnt\/server\r\n\r\n\r\n\r\n\r\nif [ \"${INSTALL_MODE}\" == \"0\" ]; then\r\n    echo -e \"downloading archive skipped by INSTALL_MODE=0\"\r\nelif [ \"${INSTALL_MODE}\" == \"1\" ]; then\r\n    \r\n    ## add git ending if it's not on the address\r\n    if [[ ${GIT_ADDRESS} != *.git ]]; then\r\n        GIT_ADDRESS=${GIT_ADDRESS}.git\r\n    fi\r\n    \r\n    if [ -z \"${USERNAME}\" ] && [ -z \"${ACCESS_TOKEN}\" ]; then\r\n        echo -e \"using anon api call\"\r\n    else\r\n        GIT_ADDRESS=\"https:\/\/${USERNAME}:${ACCESS_TOKEN}@$(echo -e ${GIT_ADDRESS} | cut -d\/ -f3-)\"\r\n    fi\r\n    \r\n    \r\n    ## pull git js repo\r\n    if [ \"$(find \/mnt\/server -mindepth 1)\" ]; then\r\n        echo -e \"\/mnt\/server directory is not empty.\"\r\n        if [ -d .git ]; then\r\n            echo -e \".git directory exists\"\r\n            if [ -f .git\/config ]; then\r\n                echo -e \"loading info from git config\"\r\n                ORIGIN=$(git config --get remote.origin.url)\r\n            else\r\n                echo -e \"files found with no git config\"\r\n                echo -e \"closing out without touching things to not break anything\"\r\n                exit 10\r\n            fi\r\n        fi\r\n    \r\n        if [ \"${ORIGIN}\" == \"${GIT_ADDRESS}\" ]; then\r\n            echo \"pulling latest from github\"\r\n            git pull\r\n        fi\r\n    else\r\n        echo -e \"\/mnt\/server is empty.\\ncloning files into repo\"\r\n        if [ -z ${BRANCH} ]; then\r\n            echo -e \"cloning default branch\"\r\n            git clone ${GIT_ADDRESS} .\r\n        else\r\n            echo -e \"cloning ${BRANCH}'\"\r\n            git clone --single-branch --branch ${BRANCH} ${GIT_ADDRESS} .\r\n        fi\r\n    fi\r\nelif [ \"${INSTALL_MODE}\" == \"2\" ]; then\r\n    DIR_COUNT=$(find . -mindepth 1 -maxdepth 1 -type d | wc -l)\r\n    FILE_COUNT=$(find . -mindepth 1 -maxdepth 1 -type f | wc -l)\r\n    \r\n    if [ \"$DIR_COUNT\" -eq 0 ] && [ \"$FILE_COUNT\" -eq 0 ]; then\r\n        echo \"Downloading server files...\"\r\n        \r\n        wget -O UnicoreCMS.zip \"${INSTALL_URL}\"\r\n        \r\n        unzip -o UnicoreCMS.zip\r\n        rm UnicoreCMS.zip\r\n    else\r\n        echo \"Downloading server files skipped\"\r\n    fi\r\n    \r\n    #if one folder unpack then all files in folder go to upside folder\r\n    DIR_COUNT=$(find . -mindepth 1 -maxdepth 1 -type d | wc -l)\r\n    FILE_COUNT=$(find . -mindepth 1 -maxdepth 1 -type f | wc -l)\r\n    #echo \"Directories: $DIR_COUNT\"\r\n    #echo \"Files: $FILE_COUNT\"\r\n    if [ \"$DIR_COUNT\" -eq 1 ] && [ \"$FILE_COUNT\" -eq 0 ]; then\r\n        DIR=$(find . -mindepth 1 -maxdepth 1 -type d)\r\n        echo \"Moving contents of $DIR\"\r\n        shopt -s dotglob nullglob\r\n        mv \"$DIR\"\/* .\r\n        shopt -u dotglob nullglob\r\n        rmdir \"$DIR\"\r\n    fi\r\nfi\r\nmkdir -p storage logs\r\n\r\necho \"Installing dependencies...\"\r\n\r\nif [ -f \"pnpm-lock.yaml\" ]; then\r\n    echo \"from pnpm-lock.yaml...\"\r\n    \/usr\/local\/bin\/pnpm install --frozen-lockfile\r\nelse\r\n    echo \"from package.json...\"\r\n    \/usr\/local\/bin\/pnpm install\r\nfi\r\n\r\n\r\nif [ -f \/mnt\/server\/package.json ]; then\r\n    echo \"Build project...\"\r\n    \/usr\/local\/bin\/pnpm run build\r\n    EXIT_CODE=$?\r\n    \r\n    if [ \"$EXIT_CODE\" -ne 0 ]; then\r\n    \r\n        if [ \"$EXIT_CODE\" -eq 137 ]; then\r\n            echo \"\"\r\n            echo \"==========================================\"\r\n            echo \"\u274c Build failed: Out of memory.\"\r\n            echo \"\"\r\n            echo \"The build process was terminated because the container\"\r\n            echo \"ran out of available RAM (Exit Code 137).\"\r\n            echo \"\"\r\n            echo \"Recommended memory:\"\r\n            echo \"  - Minimum: 2 GB RAM\"\r\n            echo \"  - Recommended: 8 GB RAM\"\r\n            echo \"==========================================\"\r\n        fi\r\n    \r\n        exit \"$EXIT_CODE\"\r\n    fi\r\nfi\r\n\r\nif [ ! -f \"\/mnt\/server\/.env\" ] && [ -f \"\/mnt\/server\/.env.example\" ]; then\r\n    echo \"Creating .env from .env.example...\"\r\n    cp \/mnt\/server\/.env.example \/mnt\/server\/.env\r\nfi\r\n\r\necho -e \"install complete\"\r\nexit 0",
+            "container": "node:24-bookworm-slim",
+            "entrypoint": "bash"
+        }
+    },
+    "variables": [
+        {
+            "name": "Git Repo Address",
+            "description": "GitHub Repo to clone\r\n\r\nI.E. https:\/\/github.com\/parkervcp\/repo_name",
+            "env_variable": "GIT_ADDRESS",
+            "default_value": "https:\/\/github.com\/MCXTeam\/UnicoreCMS.git",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string",
+            "field_type": "text"
+        },
+        {
+            "name": "Git Install Branch",
+            "description": "The branch to install.",
+            "env_variable": "BRANCH",
+            "default_value": "main",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string",
+            "field_type": "text"
+        },
+        {
+            "name": "Git Auto Update",
+            "description": "Pull the latest files on startup when using a GitHub repo.",
+            "env_variable": "AUTO_UPDATE",
+            "default_value": "0",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|boolean",
+            "field_type": "text"
+        },
+        {
+            "name": "Git Username",
+            "description": "Username to auth with git.",
+            "env_variable": "USERNAME",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string",
+            "field_type": "text"
+        },
+        {
+            "name": "Git Access Token",
+            "description": "Password to use with git.\r\n\r\nIt's best practice to use a Personal Access Token.\r\nhttps:\/\/github.com\/settings\/tokens\r\nhttps:\/\/gitlab.com\/-\/profile\/personal_access_tokens",
+            "env_variable": "ACCESS_TOKEN",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string",
+            "field_type": "text"
+        },
+        {
+            "name": "Install download mode",
+            "description": "0 - skip download archive\r\n1 - GITHUB\r\n2 - wget <your_url>",
+            "env_variable": "INSTALL_MODE",
+            "default_value": "1",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|max:1",
+            "field_type": "text"
+        },
+        {
+            "name": "Install url",
+            "description": "Zip archive url for installation.",
+            "env_variable": "INSTALL_URL",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string",
+            "field_type": "text"
+        },
+        {
+            "name": "Database sync",
+            "description": "Database sync (disable after first start)",
+            "env_variable": "DATABASE_SYNC",
+            "default_value": "1",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|boolean",
+            "field_type": "text"
+        },
+        {
+            "name": "Database seed",
+            "description": "Database seed (disable after first start)",
+            "env_variable": "DATABASE_SEED",
+            "default_value": "0",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|boolean",
+            "field_type": "text"
+        },
+        {
+            "name": "Auto rebuild",
+            "description": "0 - no build on start\r\n1 - build before every start",
+            "env_variable": "AUTO_REBUILD",
+            "default_value": "1",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|boolean",
+            "field_type": "text"
+        }
+    ]
+}
