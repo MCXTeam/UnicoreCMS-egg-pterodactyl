@@ -1,11 +1,12 @@
 FROM ghcr.io/ptero-eggs/yolks:nodejs_22
 
 ENV NODE_ENV=production
+ENV CI=true
 
 ENV COREPACK_HOME=/usr/local/share/.cache/node/corepack
 
 RUN corepack enable \
- && corepack prepare pnpm@9.15.9 --activate \
+ && corepack prepare pnpm@11.20.0 --activate \
  && apt-get update \
  && apt-get install -y --no-install-recommends \
       libcairo2 \
