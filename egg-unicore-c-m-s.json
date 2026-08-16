@@ -4,7 +4,7 @@
         "version": "PTDL_v2",
         "update_url": null
     },
-    "exported_at": "2026-08-08T17:43:26+03:00",
+    "exported_at": "2026-08-16T15:02:20+03:00",
     "name": "UnicoreCMS",
     "author": "parker@parkervcp.com",
     "description": "UnicoreCMS installation egg.\r\n\r\nAutomatically installs UnicoreCMS from the official GitHub repository or from a direct ZIP archive URL. The installer downloads the source, extracts it (if needed), installs all required dependencies, and prepares the CMS for use.",
@@ -14,7 +14,7 @@
         "Nodejs 22": "artemka3112\/unicorecms-core:nodejs_22"
     },
     "file_denylist": [],
-    "startup": "if [[ -d .git ]] && [[ \"{{AUTO_UPDATE}}\" == \"1\" ]]; then git pull; fi; if [[ \"{{AUTO_REBUILD}}\" == \"1\" ]]; then \/usr\/local\/bin\/pnpm run build; fi; if [[ \"{{DATABASE_SYNC}}\" == \"1\" ]]; then \/usr\/local\/bin\/pnpm run sync; fi; if [[ \"{{DATABASE_SEED}}\" == \"1\" ]]; then \/usr\/local\/bin\/pnpm run seed; fi; if [[ \"{{DEV_MODE}}\" == \"1\" ]]; then \/usr\/local\/bin\/pnpm run dev; else \/usr\/local\/bin\/pnpm run start; fi",
+    "startup": "if [[ -d .git ]] && [[ \"{{AUTO_UPDATE}}\" == \"1\" ]]; then git pull; fi; if [[ \"{{AUTO_REBUILD}}\" == \"1\" ]]; then \/usr\/local\/bin\/pnpm run build; fi; if [[ \"{{DATABASE_SYNC}}\" == \"1\" ]]; then \/usr\/local\/bin\/pnpm run sync; fi; if [[ \"{{DATABASE_SEED}}\" == \"1\" ]]; then \/usr\/local\/bin\/pnpm run seed; fi; if [[ \"{{GEN_ECRYPTION_KEY}}\" == \"1\" ]]; then \/usr\/local\/bin\/pnpm --filter unicore-server exec node dist\/cli\/main.js crypto-rewrap; fi; if [[ \"{{DEV_MODE}}\" == \"1\" ]]; then \/usr\/local\/bin\/pnpm run dev; else \/usr\/local\/bin\/pnpm run start; fi",
     "config": {
         "files": "{}",
         "startup": "{\r\n    \"done\": [\r\n        \"Nest application successfully started\"\r\n    ]\r\n}",
@@ -133,6 +133,16 @@
             "name": "Dev mode",
             "description": "0 - start web site by \"pnpm run start\"\r\n1 - start web site by \"pnpm run dev\"",
             "env_variable": "DEV_MODE",
+            "default_value": "0",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|boolean",
+            "field_type": "text"
+        },
+        {
+            "name": "Generate encryption key",
+            "description": "It generates a one\u2011time encryption key and then re\u2011encrypts the existing keys.",
+            "env_variable": "GEN_ECRYPTION_KEY",
             "default_value": "0",
             "user_viewable": true,
             "user_editable": true,
